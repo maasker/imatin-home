@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-theme="mint">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Matin Hassanloo · imatin.dev</title>
+<meta name="description" content="Matin Hassanloo: neuroengineer. Olfactory neural interfaces, neural signal processing, deep learning on brain recordings.">
+<meta name="theme-color" content="#050607">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="Matin Hassanloo · imatin.dev">
+<meta property="og:description" content="Neuroengineer. This page is a small cortex. Your cursor is the electrode.">
+<meta property="og:url" content="https://imatin.dev/">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<!--
+   ███╗   ███╗██╗  ██╗
+   ████╗ ████║██║  ██║     you are reading the source. respect.
+   ██╔████╔██║███████║
+   ██║╚██╔╝██║██╔══██║     press ` for a root shell.
+   ██║ ╚═╝ ██║██║  ██║     ↑ ↑ ↓ ↓ ← → ← → b a
+   ╚═╝     ╚═╝╚═╝  ╚═╝     the console is listening too.
+-->
+<canvas id="field" aria-hidden="true"></canvas>
+<div class="crt" aria-hidden="true"></div>
+
+<header class="topbar mono">
+  <span class="brand"><span class="accent">MH://</span>cortex<span class="dim">.v2</span></span>
+  <span class="grow"></span>
+  <span class="wide">uplink <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i class="off"></i></span></span>
+  <span class="wide">sess <b id="sess">0x0000</b></span>
+  <span>IST <b id="clock">--:--:--</b></span>
+</header>
+
+<h1 class="sr-only">Matin Hassanloo</h1>
+<button type="button" class="name-hit" id="name-hit" aria-label="Matin Hassanloo. Click me five times."></button>
+
+<main class="below" id="below">
+  <p class="tag mono"><span class="accent">root@cortex</span><span class="dim">:~#</span> <span id="tag"></span><span class="caret" aria-hidden="true"></span></p>
+  <nav class="links mono" aria-label="Where to go">
+    <a href="https://lab.imatin.dev" data-key="l" data-desc="lab.imatin.dev · research notes, tools, games & a shell"><span class="br">[</span><kbd>L</kbd><span class="br">]</span> ./lab</a>
+    <a href="https://cv.imatin.dev" data-key="c" data-desc="cv.imatin.dev · the formal version"><span class="br">[</span><kbd>C</kbd><span class="br">]</span> ./cv</a>
+    <a href="https://github.com/maasker" data-key="g" data-desc="github.com/maasker · code" rel="me noopener"><span class="br">[</span><kbd>G</kbd><span class="br">]</span> ./github</a>
+    <a href="mailto:YOUR_EMAIL@example.com" data-key="m" data-desc="open a channel · i reply"><span class="br">[</span><kbd>M</kbd><span class="br">]</span> ./mail</a>
+  </nav>
+  <p class="desc mono" id="desc" aria-hidden="true">&nbsp;</p>
+</main>
+
+<aside class="panel panel--left mono" aria-label="System monitor">
+  <div class="panel__head"><span>SYS.MON</span><span class="dim" id="mon-state">awake</span></div>
+  <dl class="mon">
+    <div><dt>units</dt><dd id="m-n">0</dd></div>
+    <div><dt>synapses</dt><dd id="m-syn">0</dd></div>
+    <div><dt>rate</dt><dd><span id="m-rate">0.00</span> Hz</dd></div>
+    <div><dt>w_exc</dt><dd id="m-w">0.000</dd></div>
+    <div><dt>in flight</dt><dd id="m-flight">0</dd></div>
+    <div><dt>total</dt><dd id="m-total">0</dd></div>
+  </dl>
+  <div class="gauge" aria-hidden="true"><span>load</span><div class="gauge__bar"><i id="m-gauge"></i></div></div>
+  <div class="panel__sub dim">raster · 24 units · 4 s</div>
+  <canvas id="raster" aria-hidden="true"></canvas>
+</aside>
+
+<aside class="panel panel--right mono" aria-label="Event log">
+  <div class="panel__head"><span>tail -f /var/log/cortex</span><span class="rec">● rec</span></div>
+  <ol class="log" id="log"></ol>
+</aside>
+
+<footer class="hud mono">
+  <canvas id="lfp" aria-hidden="true"></canvas>
+  <div class="hint"><span class="dim">LFP · population</span><span class="grow"></span><span class="wide">there are secrets ·</span>&nbsp;press <kbd>`</kbd> for a shell</div>
+</footer>
+
+<button type="button" class="shell-btn mono" id="shell-btn" aria-label="Open shell" aria-controls="term" aria-expanded="false">&gt;_</button>
+
+<section id="term" class="term mono" aria-label="Shell" hidden>
+  <div class="term__bar">
+    <span><span class="accent">root@cortex</span> · /dev/pts/0</span>
+    <button type="button" class="term__close" id="term-close" aria-label="Close shell">esc</button>
+  </div>
+  <div class="term__out" id="term-out" aria-live="polite"></div>
+  <form class="term__in" id="term-form" autocomplete="off">
+    <label for="term-input"><span class="accent">root@cortex</span>:~#</label>
+    <input id="term-input" type="text" spellcheck="false" autocapitalize="off" autocorrect="off">
+  </form>
+</section>
+
+<div class="boot mono" id="boot" aria-hidden="true" hidden><pre id="boot-text"></pre></div>
+<div class="breach mono" id="breach" aria-hidden="true" hidden><div class="breach__t" data-t="ACCESS GRANTED">ACCESS GRANTED</div><div class="breach__s" id="breach-s"></div></div>
+<div class="toast mono" id="toast" role="status" hidden></div>
+
+<noscript><p class="noscript mono">Matin Hassanloo · the neurons need JavaScript, the links work without it.</p></noscript>
+<script src="/main.js" type="module"></script>
+</body>
+</html>
