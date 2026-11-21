@@ -1,8 +1,6 @@
 # imatin.dev · MH://cortex
 
-Home page of **Matin Hassanloo**. A hacker-style console where the name itself is drawn by
-~650–1,700 spiking neurons. Points to the lab, CV, GitHub and email.
-No framework and no build step: `public/` is the whole site.
+Home page of **Matin Hassanloo**.
 
 ## What's actually running
 
