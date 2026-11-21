@@ -576,8 +576,8 @@ const FORTUNES = [
   'The brain runs on about 20 W. Your laptop is jealous.',
   'Noise is just signal you have not modelled yet.',
 ];
-const DEST = { lab: 'https://lab.imatin.dev', cv: 'https://cv.imatin.dev', github: 'https://github.com/maasker', code: 'https://github.com/maasker', mail: linkByKey.m?.href ?? '#' };
-const COMMANDS = ['help', 'whoami', 'ls', 'cat', 'open', 'cd', 'lab', 'cv', 'github', 'mail', 'ssh', 'ping', 'hack', 'neofetch', 'fortune', 'stats', 'fire', 'wave', 'sniff', 'coffee', 'sleep', 'wake', 'morph', 'glitch', 'theme', 'matrix', 'date', 'uptime', 'history', 'echo', 'clear', 'exit', 'sudo', 'vim', 'emacs', 'sl', 'hello'];
+const DEST = { lab: 'https://lab.imatin.dev', ops: 'https://lab.imatin.dev/ops/', cv: 'https://cv.imatin.dev', github: 'https://github.com/maasker', code: 'https://github.com/maasker', mail: linkByKey.m?.href ?? '#' };
+const COMMANDS = ['help', 'whoami', 'ls', 'cat', 'open', 'cd', 'lab', 'ops', 'cv', 'github', 'mail', 'ssh', 'ping', 'hack', 'neofetch', 'fortune', 'stats', 'fire', 'wave', 'sniff', 'coffee', 'sleep', 'wake', 'morph', 'glitch', 'theme', 'matrix', 'date', 'uptime', 'history', 'echo', 'clear', 'exit', 'sudo', 'vim', 'emacs', 'sl', 'hello'];
 
 async function ping(host) {
   const url = host.startsWith('http') ? host : `https://${host}`;
@@ -616,7 +616,7 @@ async function run(raw) {
   switch (low) {
     case 'help': case 'man':
       line('commands:', 'ok');
-      ['  whoami · ls · cat <file> · open <lab|cv|github|mail> · ssh lab · ping <host>',
+      ['  whoami · ls · cat <file> · open <lab|ops|cv|github|mail> · ssh lab · ping <host>',
        '  hack · neofetch · fortune · stats · fire · wave · sniff · coffee · morph · glitch',
        '  sleep · wake · theme <mint|amber|violet|matrix|mono> · date · uptime · history · clear · exit',
        '  …plus a few unlisted ones. `cat secrets.txt` if you get stuck.'].forEach((l) => line(l));
@@ -626,7 +626,7 @@ async function run(raw) {
       line('Matin Hassanloo · neuroengineer · olfactory neural interfaces · neural signal processing · deep learning on brain recordings', 'ok');
       break;
     case 'ls':
-      line('drwxr-xr-x  lab/  cv/  github/', 'ok');
+      line('drwxr-xr-x  lab/  ops/  cv/  github/', 'ok');
       line('-rw-r--r--  mail  secrets.txt  cortex.c  .bash_history');
       break;
     case 'cat':
@@ -636,7 +636,7 @@ async function run(raw) {
       else if (arg === 'mail') linkLine('→ ', 'open a channel', DEST.mail);
       else line(arg ? `cat: ${arg}: no such file` : 'usage: cat <file>', 'err');
       break;
-    case 'open': case 'cd': case 'lab': case 'cv': case 'github': case 'code': case 'mail': {
+    case 'open': case 'cd': case 'lab': case 'ops': case 'cv': case 'github': case 'code': case 'mail': {
       const target = (['open', 'cd'].includes(low) ? arg : low).replace(/^\.\//, '').replace(/\/$/, '').toLowerCase();
       if (DEST[target]) { linkLine(`→ ${target}: `, DEST[target], DEST[target]); setTimeout(() => (location.href = DEST[target]), 500); }
       else line(target ? `${low}: ${target}: not found` : `usage: ${low} <lab|cv|github|mail>`, 'err');
