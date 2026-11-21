@@ -68,15 +68,22 @@ function layout(form) {
   const c = document.createElement('canvas').getContext('2d');
   c.font = `700 100px ${fam}`;
   const w100 = Math.max(...lines.map((l) => c.measureText(l).width));
-  const maxW = Math.min(W * (narrow ? 0.9 : 0.86), 1280);
+  const slot = $('#name-slot');
+  const colW = slot.getBoundingClientRect().width || W * 0.9;
+  const maxW = Math.min(colW * (narrow ? 0.98 : 0.9), 1280);
   const lineH = 1.02;
+  // leave room in the center column for the identity line, prompt and doors
+  const centerH = H - 47 - 78 - 36;
+  // below the name: identity + prompt + doors (+ side panels on wide screens)
+  const reserve = W < 900 ? 430 : W >= 1180 ? 330 : 300;
   let size = (maxW / w100) * 100;
-  size = Math.min(size, narrow ? 140 : 190, (H * (narrow ? 0.34 : 0.4)) / (lines.length * lineH));
+  size = Math.min(size, narrow ? 140 : 180, Math.max(48 * lines.length, Math.min(H * 0.4, centerH - reserve)) / (lines.length * lineH));
   c.font = `700 ${size}px ${fam}`;
   const tw = Math.max(...lines.map((l) => c.measureText(l).width));
   const bw = Math.ceil(tw + size * 0.2), bh = Math.ceil(lines.length * size * lineH + size * 0.15);
-  const top = Math.max(70, H * (narrow ? 0.24 : 0.2));
-  return { lines, size, fam, lineH, box: { x: Math.round((W - bw) / 2), y: Math.round(top), w: bw, h: bh } };
+  slot.style.height = `${bh}px`;
+  const r = slot.getBoundingClientRect();
+  return { lines, size, fam, lineH, box: { x: Math.round(r.left + (r.width - bw) / 2), y: Math.round(r.top), w: bw, h: bh } };
 }
 
 function samplePoints(form, count) {
@@ -475,7 +482,7 @@ else {
 // ================================================================== LINKS
 const linkByKey = {};
 const descEl = $('#desc');
-document.querySelectorAll('.links a').forEach((a) => {
+document.querySelectorAll('.doors a').forEach((a) => {
   linkByKey[a.dataset.key] = a;
   const show = () => { descEl.textContent = `→ ${a.dataset.desc}`; };
   a.addEventListener('mouseenter', () => { show(); log(`probe → ${a.dataset.desc.split(' · ')[0]}`); glitch(160); });
@@ -487,7 +494,7 @@ function go(a) {
   const r = a.getBoundingClientRect();
   stimulate(r.left + r.width / 2, r.top, 200, 1.6);
   glitch(300);
-  log(`exec ./${a.textContent.split('./')[1]} → ${a.href}`, 'ok');
+  log(`exec → ${a.href.replace(/^https?:\/\//, '').replace(/^mailto:/, 'mailto ')}`, 'ok');
   setTimeout(() => (location.href = a.href), 320);
 }
 const typing = () => { const el = document.activeElement; return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable); };
@@ -577,7 +584,7 @@ const FORTUNES = [
   'Noise is just signal you have not modelled yet.',
 ];
 const DEST = { lab: 'https://lab.imatin.dev', ops: 'https://lab.imatin.dev/ops/', cv: 'https://cv.imatin.dev', github: 'https://github.com/maasker', code: 'https://github.com/maasker', mail: linkByKey.m?.href ?? '#' };
-const COMMANDS = ['help', 'whoami', 'ls', 'cat', 'open', 'cd', 'lab', 'ops', 'cv', 'github', 'mail', 'ssh', 'ping', 'hack', 'neofetch', 'fortune', 'stats', 'fire', 'wave', 'sniff', 'coffee', 'sleep', 'wake', 'morph', 'glitch', 'theme', 'matrix', 'date', 'uptime', 'history', 'echo', 'clear', 'exit', 'sudo', 'vim', 'emacs', 'sl', 'hello'];
+const COMMANDS = ['help', 'now', 'whoami', 'ls', 'cat', 'open', 'cd', 'lab', 'ops', 'cv', 'github', 'mail', 'ssh', 'ping', 'hack', 'neofetch', 'fortune', 'stats', 'fire', 'wave', 'sniff', 'coffee', 'sleep', 'wake', 'morph', 'glitch', 'theme', 'matrix', 'date', 'uptime', 'history', 'echo', 'clear', 'exit', 'sudo', 'vim', 'emacs', 'sl', 'hello'];
 
 async function ping(host) {
   const url = host.startsWith('http') ? host : `https://${host}`;
@@ -617,9 +624,12 @@ async function run(raw) {
     case 'help': case 'man':
       line('commands:', 'ok');
       ['  whoami · ls · cat <file> · open <lab|ops|cv|github|mail> · ssh lab · ping <host>',
-       '  hack · neofetch · fortune · stats · fire · wave · sniff · coffee · morph · glitch',
+       '  cat now.log · hack · neofetch · fortune · stats · fire · wave · sniff · coffee · morph · glitch',
        '  sleep · wake · theme <mint|amber|violet|matrix|mono> · date · uptime · history · clear · exit',
        '  …plus a few unlisted ones. `cat secrets.txt` if you get stuck.'].forEach((l) => line(l));
+      break;
+    case 'now':
+      printNow();
       break;
     case 'whoami':
       line('root. (well, guest with ambitions.) about the owner:');
@@ -627,11 +637,12 @@ async function run(raw) {
       break;
     case 'ls':
       line('drwxr-xr-x  lab/  ops/  cv/  github/', 'ok');
-      line('-rw-r--r--  mail  secrets.txt  cortex.c  .bash_history');
+      line('-rw-r--r--  mail  now.log  secrets.txt  cortex.c  .bash_history');
       break;
     case 'cat':
       if (arg === 'secrets.txt') ['1. the field is alive. click it. hover the name.', '2. click the name 5× fast. it has other forms.', '3. some words do things when typed on the page.', '   (one smells, one is a drink, one is a nap, one is a movie)', '4. ↑ ↑ ↓ ↓ ← → ← → b a', '5. leave me alone for 25 s and i fall asleep.', '6. the devtools console takes commands too.'].forEach((l) => line(l, 'warm'));
       else if (arg === 'cortex.c') ['while (alive) {', '    v = v * leak + input();', '    if (v >= threshold) { spike(); v = reset; }', '}', '// that is it. that is the whole trick.'].forEach((l) => line(l, 'ok'));
+      else if (arg === 'now.log') printNow();
       else if (arg === '.bash_history') ['make coffee', 'git commit -m "it works, do not touch"', 'python sort_spikes.py --channels 64', 'sudo make me a sandwich', 'exit'].forEach((l) => line(l, 'dim'));
       else if (arg === 'mail') linkLine('→ ', 'open a channel', DEST.mail);
       else line(arg ? `cat: ${arg}: no such file` : 'usage: cat <file>', 'err');
@@ -649,7 +660,7 @@ async function run(raw) {
     case 'ping': await ping(arg || 'lab.imatin.dev'); break;
     case 'hack': await hack(); break;
     case 'neofetch':
-      ['      .---.       root@cortex', '     / o o \\      -----------', '    |  (_)  |     OS: MH Cortex 2.0 (browser)', '     \\_____/      Kernel: leaky-integrate-and-fire',
+      ['      .---.       root@cortex', '     / o o \\      -----------', '    |  (_)  |     OS: MH Cortex 3.0 (browser)', '     \\_____/      Kernel: leaky-integrate-and-fire',
        `    /|  |  |\\     Units: ${neurons.length} · Synapses: ${edges.length}`, `   / |  |  | \\    Rate: ${rateEMA.toFixed(2)} Hz · w_exc: ${W_EXC.toFixed(3)}`, `                  Theme: ${root.dataset.theme} · Uptime: ${Math.floor((performance.now() - born) / 1000)} s`].forEach((l) => line(l, 'ok'));
       break;
     case 'fortune': line(FORTUNES[Math.floor(Math.random() * FORTUNES.length)], 'warm'); break;
@@ -762,6 +773,99 @@ window.cortex = {
   stats: () => ({ units: neurons.length, inName: letterCount, synapses: edges.length, spikesSinceLoad: totalSpikes, rateHz: +rateEMA.toFixed(2), w_exc: +W_EXC.toFixed(3), state: st.mode }),
 };
 
+// ================================================================== LIVE FEED (lab + github)
+// The lab publishes /feed.json (CORS open). Override with window.MH_FEED for local testing.
+const FEED_URL = window.MH_FEED || 'https://lab.imatin.dev/feed.json';
+let feed = null;
+const agoTxt = (iso) => {
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (s < 3600) return `${Math.max(1, Math.round(s / 60))}m ago`;
+  if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+  const d = Math.round(s / 86400);
+  return d === 1 ? 'yesterday' : `${d}d ago`;
+};
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+function setLive(key, html) { const el = document.querySelector(`[data-live="${key}"]`); if (el) el.innerHTML = html; }
+
+function printNow() {
+  if (!feed) { line('now.log: lab feed unreachable · try `open lab`', 'err'); return; }
+  feed.log.slice(0, 4).forEach((c) => line(`› ${c.msg}  [${c.date}]`, c.type === 'feat' ? '' : 'ok'));
+  if (feed.notes[0]) line(`› latest note: ${feed.notes[0].title}  [${feed.notes[0].date}]`, 'ok');
+}
+
+function renderNowPanel() {
+  const ol = $('#now');
+  ol.innerHTML = '';
+  const items = [];
+  feed.log.slice(0, 3).forEach((c) => items.push(`${esc(c.msg)} <span class="d">· ${c.date.slice(5)}</span>`));
+  if (feed.notes[0]) items.push(`note: <a href="${esc(feed.notes[0].url)}">${esc(feed.notes[0].title)}</a> <span class="d">· ${feed.notes[0].date.slice(5)}</span>`);
+  for (const h of items) { const li = document.createElement('li'); const sp = document.createElement('span'); sp.innerHTML = h; li.appendChild(sp); ol.appendChild(li); }
+  $('#now-age').textContent = `synced ${agoTxt(feed.updated)}`;
+}
+
+function renderHeatmap(dates) {
+  const box = $('#hm');
+  box.innerHTML = '';
+  const DAY = 86400000;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const dow = (today.getDay() + 6) % 7;
+  const start = new Date(today.getTime() - (15 * 7 + dow) * DAY);
+  const count = {};
+  for (const d of dates) count[d] = (count[d] || 0) + 1;
+  let total = 0;
+  for (let i = 0; i < 16 * 7; i++) {
+    const day = new Date(start.getTime() + i * DAY);
+    const k = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+    const c = count[k] || 0; total += c;
+    const cell = document.createElement('i');
+    if (c) cell.className = c >= 3 ? 'l3' : c === 2 ? 'l2' : 'l1';
+    if (day > today) cell.style.opacity = '0.25';
+    cell.title = `${k} · ${c} note${c === 1 ? '' : 's'}`;
+    box.appendChild(cell);
+  }
+  $('#hm-total').textContent = `${total} notes`;
+  $('#hm-meta').textContent = `${feed.stats.notes} notes · ${feed.stats.concepts} concepts in the lab`;
+}
+
+async function loadFeed() {
+  try {
+    const r = await fetch(FEED_URL, { cache: 'no-cache' });
+    if (!r.ok) throw new Error(r.status);
+    feed = await r.json();
+    const n = feed.notes[0], o = feed.ops[0];
+    if (n) setLive('lab', `latest: <b>${esc(n.title)}</b> · ${agoTxt(n.date)}`);
+    if (o) setLive('ops', `latest: <b>${esc(o.title)}</b> · ${agoTxt(o.date)}`);
+    renderNowPanel();
+    renderHeatmap(feed.stats.noteDates);
+    log(`feed synced · ${feed.stats.notes} notes · lab.imatin.dev`, 'ok');
+  } catch {
+    setLive('lab', 'notes, tools, games & a shell');
+    setLive('ops', 'bots, security & CTF writeups');
+    $('#now').innerHTML = '<li class="dim">lab feed unreachable · <a href="https://lab.imatin.dev/now/">open /now ↗</a></li>';
+    $('#hm-meta').textContent = 'lab feed unreachable';
+    log('feed: lab.imatin.dev unreachable', 'warm');
+  }
+}
+
+async function loadGithub(user = 'maasker') {
+  const KEY = `mh.gh.${user}`;
+  try {
+    let ev;
+    try { const c = JSON.parse(localStorage.getItem(KEY) || 'null'); if (c && Date.now() - c.t < 600000) ev = c.ev; } catch {}
+    if (!ev) {
+      const r = await fetch(`https://api.github.com/users/${user}/events/public?per_page=30`);
+      if (!r.ok) throw new Error(r.status);
+      ev = await r.json();
+      try { localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), ev })); } catch {}
+    }
+    const p = ev.find((e) => e.type === 'PushEvent' || e.type === 'CreateEvent');
+    setLive('gh', p ? `last push: <b>${esc(p.repo.name.split('/')[1])}</b> · ${agoTxt(p.created_at)}` : 'busy in private repos');
+    if (p) log(`github · push → ${p.repo.name.split('/')[1]} · ${agoTxt(p.created_at)}`);
+  } catch {
+    setLive('gh', 'github.com/maasker');
+  }
+}
+
 // ================================================================== START
 (async () => {
   try { await Promise.race([document.fonts.load(`700 120px ${FONT}`), sleepMs(1200)]); } catch {}
@@ -770,4 +874,6 @@ window.cortex = {
   requestAnimationFrame(loop);
   setInterval(monitor, 125);
   runBoot();
+  loadFeed();
+  loadGithub();
 })();

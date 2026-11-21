@@ -1,6 +1,8 @@
 # imatin.dev · MH://cortex
 
-Home page of **Matin Hassanloo**.
+Home page of **Matin Hassanloo**. A hacker-style console where the name itself is drawn by
+~650–1,700 spiking neurons. Points to the lab, CV, GitHub and email.
+No framework and no build step: `public/` is the whole site.
 
 ## What's actually running
 
@@ -11,6 +13,16 @@ Home page of **Matin Hassanloo**.
 - Cursor = stimulating electrode (it also physically nudges the neurons). Click = current pulse.
 - **SYS.MON** shows real numbers from the sim; the raster tracks 24 actual units; the bottom strip is the population LFP.
 - Idle 25 s → slow-wave sleep (synchronous ~0.8 Hz up-states). Move to wake.
+
+## v3: console layout + live doors
+
+- **Layout:** full-width neuron name on top, then three columns: **SYS.MON + reading heatmap** | **identity, prompt and five doors** | **`cat now.log` + event tail**. On screens narrower than 1180 px the side panels hide.
+- **Doors** (`./lab ./ops ./cv ./github ./mail`) show live previews:
+  - lab and ops read `https://lab.imatin.dev/feed.json`, which the lab builds from its notes, ops posts and `log.json`.
+  - github reads your public events from the GitHub API (cached for 10 min).
+- **`cat now.log`** (right panel and shell command) also comes from the lab feed, so writing a note or a log entry in the lab updates this page too.
+- If the feed is unreachable, everything falls back to static text.
+- Local testing against a local lab: run the lab with `npx astro preview` and in the browser console run `window.MH_FEED='http://localhost:4321/feed.json'` before load (or edit `FEED_URL` in `main.js`).
 
 ## Easter eggs (spoilers)
 
