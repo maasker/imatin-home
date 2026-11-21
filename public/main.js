@@ -33,7 +33,7 @@ function log(msg, cls = '') {
   const t = document.createElement('span'); t.className = 't'; t.textContent = `[${stamp()}] `;
   li.append(t, document.createTextNode(msg));
   logEl.appendChild(li);
-  while (logEl.children.length > 14) logEl.firstChild.remove();
+  while (logEl.children.length > 9) logEl.firstChild.remove();
 }
 
 // ================================================================== NAME FORMS
@@ -102,15 +102,18 @@ function samplePoints(form, count) {
     for (let x = 0; x < oc.width; x += step)
       if (data[(y * oc.width + x) * 4 + 3] > 140) pts.push({ x: L.box.x + x + rand(-step, step) * 0.35, y: L.box.y + y + rand(-step, step) * 0.35 });
   for (let i = pts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pts[i], pts[j]] = [pts[j], pts[i]]; }
+  // too few glyph pixels means the font or layout wasn't ready yet: scatter the
+  // neurons across the name box for now (never stack them) and let the caller retry
+  const ok = pts.length >= 60 && L.box.w > 40 && L.box.h > 20;
   const out = [];
   for (let i = 0; i < count; i++) {
-    const p = pts[i % Math.max(1, pts.length)] || { x: W / 2, y: H / 2 };
+    if (!ok) { out.push({ x: L.box.x + Math.random() * Math.max(40, L.box.w), y: L.box.y + Math.random() * Math.max(20, L.box.h) }); continue; }
+    const p = pts[i % pts.length];
     out.push(i < pts.length ? p : { x: p.x + rand(-2, 2), y: p.y + rand(-2, 2) });
   }
   // faint ghost of the glyphs, drawn under the neurons so the name stays legible
-  ghost = oc;
-  ghostBox = L.box;
-  return { pts: out, box: L.box };
+  if (ok) { ghost = oc; ghostBox = L.box; }
+  return { pts: out, box: L.box, ok };
 }
 let ghost = null, ghostBox = null;
 
@@ -160,9 +163,11 @@ function build() {
   cv.width = W * DPR; cv.height = H * DPR;
   g.setTransform(DPR, 0, 0, DPR, 0, 0);
   letterCount = Math.round(Math.max(650, Math.min(1700, (W * H) / 720)));
-  const { pts, box } = samplePoints(FORMS[formIdx], letterCount);
+  const { pts, box, ok } = samplePoints(FORMS[formIdx], letterCount);
   placeChrome(box);
   neurons = pts.map((p) => makeNeuron(p.x, p.y, true));
+  if (!ok) scheduleRetarget(250);
+  else for (let i = 0; i < letterCount; i++) neurons[i].letterOk = true;
   const bgN = Math.round(Math.max(30, Math.min(110, (W * H) / 16000)));
   for (let i = 0; i < bgN; i++) {
     let x, y, tries = 0;
@@ -175,6 +180,24 @@ function build() {
   tracked = [];
   for (let i = 0; i < 24; i++) { const n = neurons[Math.floor((i / 24) * letterCount)]; n.track = i; tracked.push([]); }
   wire();
+}
+
+// Re-sample the name and let the neurons fly to their new homes. Called when fonts finish
+// loading, when the name slot moves or resizes, and as a retry if a sample came back empty.
+let retargetT = 0, retargetTries = 0;
+function scheduleRetarget(ms) { clearTimeout(retargetT); retargetT = setTimeout(retarget, ms); }
+function retarget() {
+  if (!neurons.length) return;
+  const { pts, box, ok } = samplePoints(FORMS[formIdx], letterCount);
+  if (!ok) { if (++retargetTries < 20) scheduleRetarget(300); return; }
+  retargetTries = 0;
+  const moved = Math.abs(box.x - nameBox.x) > 2 || Math.abs(box.y - nameBox.y) > 2 || Math.abs(box.w - nameBox.w) > 2 || Math.abs(box.h - nameBox.h) > 2;
+  const scattered = !edges.length || neurons[0].letterOk !== true;
+  if (!moved && !scattered) return;
+  placeChrome(box);
+  for (let i = 0; i < letterCount; i++) { neurons[i].pending = { x: pts[i].x, y: pts[i].y, at: t + rand(0, 0.35) }; neurons[i].letterOk = true; }
+  spikes = [];
+  st.rewireAt = t + 1.2;
 }
 
 function morph(next) {
@@ -841,7 +864,7 @@ async function loadFeed() {
   } catch {
     setLive('lab', 'notes, tools, games & a shell');
     setLive('ops', 'bots, security & CTF writeups');
-    $('#now').innerHTML = '<li class="dim">lab feed unreachable · <a href="https://lab.imatin.dev/now/">open /now ↗</a></li>';
+    $('#now').innerHTML = '<li class="dim"><span></span><span>lab feed unreachable · <a href="https://lab.imatin.dev/now/">open /now ↗</a></span></li>';
     $('#hm-meta').textContent = 'lab feed unreachable';
     log('feed: lab.imatin.dev unreachable', 'warm');
   }
@@ -872,6 +895,11 @@ async function loadGithub(user = 'maasker') {
   build();
   sizeAux();
   requestAnimationFrame(loop);
+  // fonts and the stylesheet can finish after the first sample: re-check then
+  document.fonts?.ready?.then(() => scheduleRetarget(50));
+  document.fonts?.addEventListener?.('loadingdone', () => scheduleRetarget(80));
+  addEventListener('load', () => scheduleRetarget(80));
+  new ResizeObserver(() => scheduleRetarget(120)).observe($('#below'));
   setInterval(monitor, 125);
   runBoot();
   loadFeed();
