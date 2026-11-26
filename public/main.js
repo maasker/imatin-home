@@ -3,6 +3,15 @@
 // They are wired to their neighbours, spike for real, and keep themselves near
 // criticality with homeostatic synaptic scaling. Your cursor is the electrode.
 
+// ------------------------------------------------------------------ your details
+// null = not shown. The mail door falls back to the lab's contact section.
+const CONFIG = {
+  github: 'sudometin',
+  email: 'hi@imatin.dev',
+  telegramChannel: 'UNFINITUM',
+  cv: null,               // e.g. 'https://cv.imatin.dev' once it exists
+};
+
 const $ = (s) => document.querySelector(s);
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const root = document.documentElement;
@@ -606,8 +615,19 @@ const FORTUNES = [
   'The brain runs on about 20 W. Your laptop is jealous.',
   'Noise is just signal you have not modelled yet.',
 ];
-const DEST = { lab: 'https://lab.imatin.dev', ops: 'https://lab.imatin.dev/ops/', cv: 'https://cv.imatin.dev', github: 'https://github.com/maasker', code: 'https://github.com/maasker', mail: linkByKey.m?.href ?? '#' };
-const COMMANDS = ['help', 'now', 'whoami', 'ls', 'cat', 'open', 'cd', 'lab', 'ops', 'cv', 'github', 'mail', 'ssh', 'ping', 'hack', 'neofetch', 'fortune', 'stats', 'fire', 'wave', 'sniff', 'coffee', 'sleep', 'wake', 'morph', 'glitch', 'theme', 'matrix', 'date', 'uptime', 'history', 'echo', 'clear', 'exit', 'sudo', 'vim', 'emacs', 'sl', 'hello'];
+const GH = `https://github.com/${CONFIG.github}`;
+const MAIL = CONFIG.email ? `mailto:${CONFIG.email}` : 'https://lab.imatin.dev/#contact';
+{ const m = document.getElementById('door-mail'); if (m) { m.href = MAIL; if (CONFIG.email) m.dataset.desc = `${CONFIG.email} · i reply`; } }
+const DEST = { lab: 'https://lab.imatin.dev', ops: 'https://lab.imatin.dev/ops/', builds: 'https://lab.imatin.dev/#builds', github: GH, code: GH, mail: MAIL };
+if (CONFIG.cv) DEST.cv = CONFIG.cv;
+if (CONFIG.telegramChannel) DEST.unfinitum = `https://t.me/${CONFIG.telegramChannel}`;
+const BUILDS = [
+  ['Axial', 'v0.2.0', 'macOS MRI viewer + DICOM de-identifier', `${GH}/Axial`],
+  ['EFFERENT-008', 'open beta', 'server & ops manager in Telegram', 'https://t.me/TheEfferentBot'],
+  ['NULLBYTE', 'building', 'security toolkit in a Telegram bot', null],
+  ['UNFINITUM', 'live', 'daily projects, code & papers', CONFIG.telegramChannel ? `https://t.me/${CONFIG.telegramChannel}` : null],
+];
+const COMMANDS = ['help', 'now', 'builds', 'whoami', 'ls', 'cat', 'open', 'cd', 'lab', 'ops', 'cv', 'github', 'mail', 'ssh', 'ping', 'hack', 'neofetch', 'fortune', 'stats', 'fire', 'wave', 'sniff', 'coffee', 'sleep', 'wake', 'morph', 'glitch', 'theme', 'matrix', 'date', 'uptime', 'history', 'echo', 'clear', 'exit', 'sudo', 'vim', 'emacs', 'sl', 'hello'];
 
 async function ping(host) {
   const url = host.startsWith('http') ? host : `https://${host}`;
@@ -646,7 +666,7 @@ async function run(raw) {
   switch (low) {
     case 'help': case 'man':
       line('commands:', 'ok');
-      ['  whoami · ls · cat <file> · open <lab|ops|cv|github|mail> · ssh lab · ping <host>',
+      ['  whoami · ls · builds · cat <file> · open <lab|ops|builds|github|mail> · ssh lab · ping <host>',
        '  cat now.log · hack · neofetch · fortune · stats · fire · wave · sniff · coffee · morph · glitch',
        '  sleep · wake · theme <mint|amber|violet|matrix|mono> · date · uptime · history · clear · exit',
        '  …plus a few unlisted ones. `cat secrets.txt` if you get stuck.'].forEach((l) => line(l));
@@ -659,7 +679,7 @@ async function run(raw) {
       line('Matin Hassanloo · neuroengineer · olfactory neural interfaces · neural signal processing · deep learning on brain recordings', 'ok');
       break;
     case 'ls':
-      line('drwxr-xr-x  lab/  ops/  cv/  github/', 'ok');
+      line('drwxr-xr-x  lab/  ops/  builds/  github/', 'ok');
       line('-rw-r--r--  mail  now.log  secrets.txt  cortex.c  .bash_history');
       break;
     case 'cat':
@@ -669,6 +689,11 @@ async function run(raw) {
       else if (arg === '.bash_history') ['make coffee', 'git commit -m "it works, do not touch"', 'python sort_spikes.py --channels 64', 'sudo make me a sandwich', 'exit'].forEach((l) => line(l, 'dim'));
       else if (arg === 'mail') linkLine('→ ', 'open a channel', DEST.mail);
       else line(arg ? `cat: ${arg}: no such file` : 'usage: cat <file>', 'err');
+      break;
+    case 'builds':
+    case 'projects':
+      BUILDS.forEach(([n, st, tag, href]) => (href ? linkLine(`  ${n.padEnd(14)} ${st.padEnd(10)} `, tag, href) : line(`  ${n.padEnd(14)} ${st.padEnd(10)} ${tag}`)));
+      line('all of them: open builds', 'dim');
       break;
     case 'open': case 'cd': case 'lab': case 'ops': case 'cv': case 'github': case 'code': case 'mail': {
       const target = (['open', 'cd'].includes(low) ? arg : low).replace(/^\.\//, '').replace(/\/$/, '').toLowerCase();
@@ -858,6 +883,7 @@ async function loadFeed() {
     const n = feed.notes[0], o = feed.ops[0];
     if (n) setLive('lab', `latest: <b>${esc(n.title)}</b> · ${agoTxt(n.date)}`);
     if (o) setLive('ops', `latest: <b>${esc(o.title)}</b> · ${agoTxt(o.date)}`);
+    if (feed.builds?.length) setLive('builds', feed.builds.slice(0, 3).map((b) => `<b>${esc(b.name)}</b>`).join(' · '));
     renderNowPanel();
     renderHeatmap(feed.stats.noteDates);
     log(`feed synced · ${feed.stats.notes} notes · lab.imatin.dev`, 'ok');
@@ -870,7 +896,7 @@ async function loadFeed() {
   }
 }
 
-async function loadGithub(user = 'maasker') {
+async function loadGithub(user = CONFIG.github) {
   const KEY = `mh.gh.${user}`;
   try {
     let ev;
@@ -885,7 +911,7 @@ async function loadGithub(user = 'maasker') {
     setLive('gh', p ? `last push: <b>${esc(p.repo.name.split('/')[1])}</b> · ${agoTxt(p.created_at)}` : 'busy in private repos');
     if (p) log(`github · push → ${p.repo.name.split('/')[1]} · ${agoTxt(p.created_at)}`);
   } catch {
-    setLive('gh', 'github.com/maasker');
+    setLive('gh', `github.com/${CONFIG.github}`);
   }
 }
 

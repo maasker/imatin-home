@@ -47,6 +47,10 @@ No framework and no build step: `public/` is the whole site.
 | switching tabs | title changes |
 | any bad URL | `404.html` |
 
+## Your details
+
+Edit the `CONFIG` block at the top of `public/main.js` (github, email, Telegram channel, CV). Anything left `null` is hidden; the `./mail` door falls back to the lab's contact section.
+
 ## Edit before launch
 
 - `public/index.html`: replace `mailto:YOUR_EMAIL@example.com`.
@@ -66,7 +70,7 @@ Note: the boot sequence shows once per browser tab. Open a new tab (or clear ses
 
 ## Deploy (Cloudflare Workers, same account as the lab)
 
-1. Push this folder to a new GitHub repo, e.g. `maasker/imatin-home`.
+1. Push this folder to a new GitHub repo, e.g. `sudometin/imatin-home`.
 2. Cloudflare → **Workers & Pages → Create → Import a repository** → pick it. Build command: empty. Deploy command: `npx wrangler deploy`.
 3. DNS for imatin.dev → **Add record**: `AAAA @ 100::` (Proxied) and `AAAA www 100::` (Proxied).
 4. **imatin-home → Domains → Add Route**: `imatin.dev/*`, then again `www.imatin.dev/*`.
