@@ -170,8 +170,13 @@ kbd { font-family: var(--mono); }
 .breach__s { font-size: 13px; color: var(--text-2); }
 
 /* ---------- shell ---------- */
-.shell-btn { position: fixed; right: 16px; bottom: 100px; z-index: 12; width: 50px; height: 50px; border: 1px solid var(--line); background: rgba(5,8,9,.9); color: var(--accent); font-size: 14px; cursor: pointer; display: none; }
-@media (hover: none) { .shell-btn { display: block; } }
+/* touch screens: the shell lives in the HUD bar instead of a floating button */
+.shell-btn { display: none; pointer-events: auto; min-height: 30px; padding: 0 12px; border: 1px solid rgba(var(--accent-rgb), .45);
+  background: rgba(var(--accent-rgb), .06); color: var(--text-2); font: inherit; font-size: 11px; letter-spacing: .06em; cursor: pointer;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
+.shell-btn:active { background: rgba(var(--accent-rgb), .18); }
+.shell-btn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+@media (hover: none) { .shell-btn { display: inline-flex; align-items: center; gap: 6px; } .kbd-hint { display: none; } }
 .term { position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: min(58vh, 480px); display: flex; flex-direction: column;
   background: rgba(3,5,6,.97); border-bottom: 1px solid var(--accent); box-shadow: 0 0 40px rgba(var(--accent-rgb), .15), 0 30px 80px rgba(0,0,0,.7); font-size: 13px; animation: drop .18s ease-out; }
 @keyframes drop { from { transform: translateY(-100%); } }
@@ -197,6 +202,10 @@ kbd { font-family: var(--mono); }
   .layout { padding: 12px 14px; }
   .center { justify-content: flex-start; gap: 14px; }
   .ident { font-size: 22px; }
+  /* reserve two lines so the typed tagline never shoves the doors around */
+  .tag { line-height: 1.6; min-height: 3.2em; }
+  /* hover descriptions are a desktop thing; keep them to one tidy line */
+  .desc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .crt::after, .caret, .rec, .door:hover .door__top, .breach__t::before, .breach__t::after { animation: none; }
